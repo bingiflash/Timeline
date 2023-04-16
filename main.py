@@ -15,11 +15,13 @@ ans_image.fill(255)
 card_width, card_height = 190, 315
 text_width, text_height = 190, 50
 image_width, image_height = 190, card_height - text_height
-padding = 19
+card_padding = 19
+image_padding = 10
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 fontScale = 0.5
 fontThickness = 1
+linetype = cv2.LINE_AA
 
 def get_maps(paper_width, paper_height, card_width, card_height, padding):
     coord_map = {}
@@ -42,6 +44,8 @@ def draw_borders(img, co_ord_map):
         i, j = cords
         # draw a card
         cv2.rectangle(img, (i, j), (i + card_width, j + card_height), (0, 0, 0), 1)
+        # draw an image box
+        cv2.rectangle(img, (i + image_padding, j + image_padding), (i + image_width - image_padding, j + image_height - image_padding), (0, 0, 0), 1)
         # draw a text box
         cv2.rectangle(img, (i, j + image_height), (i + text_width, j + card_height), (0, 0, 0), 1)
     return img
@@ -50,7 +54,7 @@ def get_images():
     images = {}
     for image_name in os.listdir('images'):
         image = cv2.imread('images\\' + image_name)
-        image = cv2.resize(image, (image_width, image_height))
+        image = cv2.resize(image, (image_width-2*image_padding, image_height-2*image_padding), interpolation=cv2.INTER_AREA)
         images[image_name] = image
     return images
 
@@ -58,21 +62,21 @@ def create_clue_and_ans_pages(clue_img, ans_img, images, clues, answers, card_co
     for index, image in enumerate(images):
         # create clue page
         x, y = card_cord_map[index]
-        clue_img[y:y+image_height, x:x+image_width] = image
+        clue_img[y+image_padding:y+image_height-image_padding, x+image_padding:x+image_width-image_padding] = image
         text = clues[index]
         textsize = cv2.getTextSize(text, font, fontScale, fontThickness)[0]
         text_x = x + (text_width - textsize[0]) // 2
         text_y = y + image_height + (text_height + textsize[1]) // 2
-        cv2.putText(clue_img, text, (text_x, text_y), font, fontScale, (0, 0, 0), fontThickness)
+        cv2.putText(clue_img, text, (text_x, text_y), font, fontScale, (0, 0, 0), fontThickness, linetype)
 
         # create ans page
         mirror_x, mirror_y = card_cord_map[mirror_map[index]]
-        ans_img[mirror_y:mirror_y+image_height, mirror_x:mirror_x+image_width] = image
+        ans_img[mirror_y+image_padding:mirror_y+image_height-image_padding, mirror_x+image_padding:mirror_x+image_width-image_padding] = image
         text = str(answers[index])
         textsize = cv2.getTextSize(text, font, fontScale, fontThickness)[0]
         text_x = mirror_x + (text_width - textsize[0]) // 2
         text_y = mirror_y + image_height + (text_height + textsize[1]) // 2
-        cv2.putText(ans_img, text, (text_x, text_y), font, fontScale, (0, 0, 0), fontThickness)
+        cv2.putText(ans_img, text, (text_x, text_y), font, fontScale, (0, 0, 0), fontThickness, linetype)
     return clue_img, ans_img
 
 def create_pdf_from_img_objs(img_objs, pdf_name):
@@ -83,9 +87,9 @@ def create_pdf_from_img_objs(img_objs, pdf_name):
         image_names.append(image_name)
 
     with open(pdf_name, "wb") as f:
-        f.write(img2pdf.convert(*image_names))
+        f.write(img2pdf.convert(*image_names)) # type: ignore
 
-co_ord_map, mirror_map = get_maps(paper_width, paper_height, card_width, card_height, padding)
+co_ord_map, mirror_map = get_maps(paper_width, paper_height, card_width, card_height, card_padding)
 print(co_ord_map)
 print(mirror_map)
 
@@ -99,4 +103,9 @@ answers = range(0, len(clues))
 
 clue_image, ans_image = create_clue_and_ans_pages(clue_image, ans_image, images.values(), clues, answers, co_ord_map, mirror_map)
 
-create_pdf_from_img_objs([clue_image, ans_image], 'result.pdf')
+cv2.imshow('clue', clue_image)
+cv2.imshow('ans', ans_image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+# create_pdf_from_img_objs([clue_image, ans_image], 'result.pdf')
