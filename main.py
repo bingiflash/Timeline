@@ -15,6 +15,7 @@ ans_image.fill(255)
 card_width, card_height = 190, 315
 text_width, text_height = 190, 50
 image_width, image_height = 190, card_height - text_height
+ans_box_width, ans_box_height = 95, 25
 card_padding = 19
 image_padding = 10
 
@@ -45,15 +46,17 @@ def draw_borders(img, co_ord_map):
         # draw a card
         cv2.rectangle(img, (i, j), (i + card_width, j + card_height), (0, 0, 0), 1)
         # draw an image box
-        cv2.rectangle(img, (i + image_padding, j + image_padding), (i + image_width - image_padding, j + image_height - image_padding), (0, 0, 0), 1)
+        cv2.rectangle(img, (i + image_padding, j + image_padding), (i + image_width - image_padding, j + image_height), (0, 0, 0), 1)
         # draw a text box
         cv2.rectangle(img, (i, j + image_height), (i + text_width, j + card_height), (0, 0, 0), 1)
+        # draw an answer box on the ans page on top of text box
+        cv2.rectangle(img, (i +image_padding+(image_width//4), j + image_height - ans_box_height), (i + image_width - image_padding - (image_width//4), j + image_height), (0, 0, 0), 1)
     return img
 
 def get_images():
     images = {}
-    for image_name in os.listdir('images'):
-        image = cv2.imread('images\\' + image_name)
+    for image_name in os.listdir('images_1'):
+        image = cv2.imread('images_1\\' + image_name)
         image = cv2.resize(image, (image_width-2*image_padding, image_height-2*image_padding), interpolation=cv2.INTER_AREA)
         images[image_name] = image
     return images
@@ -98,7 +101,7 @@ ans_image = draw_borders(ans_image, co_ord_map)
 
 images = get_images()
 
-clues = os.listdir('images')
+clues = os.listdir('images_1')
 answers = range(0, len(clues))
 
 clue_image, ans_image = create_clue_and_ans_pages(clue_image, ans_image, images.values(), clues, answers, co_ord_map, mirror_map)
